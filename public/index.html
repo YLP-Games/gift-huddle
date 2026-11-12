@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gift Huddle</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg">
+<meta name="theme-color" content="#e4572e">
+<style>
+  :root { --bg:#fbf6ef; --card:#fff; --ink:#2a2433; --muted:#7b7386; --line:#eadfd1; --accent:#e4572e; --accent2:#2e86ab; --good:#2e9e6b; --warn:#c98a00; --chip:#f4ece1; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.45; }
+  .app { width:min(860px,94vw); margin:0 auto; padding:28px 0 60px; }
+  h1 { font-size:2.1rem; margin:0; } h1 span { color:var(--accent); }
+  .sub { color:var(--muted); margin:4px 0 22px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px 22px; margin-bottom:16px; }
+  h2 { font-size:1.1rem; margin:0 0 4px; } h2 i { font-style:normal; display:inline-block; width:26px; height:26px; line-height:26px; text-align:center; border-radius:50%; background:var(--accent); color:#fff; font-size:.85rem; margin-right:8px; }
+  .hint { color:var(--muted); font-size:.9rem; margin:0 0 14px; }
+  label { display:block; font-size:.8rem; font-weight:600; color:var(--muted); margin-bottom:4px; }
+  input, select { width:100%; padding:10px 12px; font:inherit; border:1.5px solid var(--line); border-radius:10px; background:#fff; color:var(--ink); outline:none; }
+  input:focus, select:focus { border-color:var(--accent2); }
+  .grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); }
+  .chips { display:flex; flex-wrap:wrap; gap:7px; margin:10px 0 12px; }
+  .chip { padding:6px 11px; border-radius:999px; background:var(--chip); border:1.5px solid transparent; font-size:.88rem; cursor:pointer; user-select:none; }
+  .chip.on { background:#fde3da; border-color:var(--accent); font-weight:600; }
+  .chip.static { cursor:default; } .chip b { color:var(--accent); margin-left:4px; }
+  button { padding:10px 16px; font:inherit; font-weight:700; border:none; border-radius:10px; cursor:pointer; background:var(--accent); color:#fff; }
+  button.ghost { background:var(--chip); color:var(--ink); }
+  button.x { background:none; color:var(--muted); padding:0 6px; font-size:1.1rem; }
+  button:hover { filter:brightness(1.06); }
+  .row { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; } .row > div { flex:1; min-width:160px; }
+  .friend { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:10px 0; border-top:1px solid var(--line); }
+  .friend strong { display:block; } .friend small { color:var(--muted); }
+  .gift { border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-top:12px; background:#fff; }
+  .gift.top { border-color:var(--accent); box-shadow:0 4px 16px #e4572e22; }
+  .gift header { display:flex; justify-content:space-between; gap:12px; align-items:baseline; }
+  .gift h3 { margin:0; font-size:1.05rem; } .price { font-weight:700; white-space:nowrap; }
+  .bar { height:6px; background:var(--chip); border-radius:4px; margin:8px 0; overflow:hidden; } .bar div { height:100%; background:var(--accent); }
+  .why { font-size:.88rem; color:var(--muted); margin:4px 0; } .why b { color:var(--ink); }
+  .del { font-size:.88rem; font-weight:600; margin:6px 0; } .del.ok { color:var(--good); } .del.tight { color:var(--warn); }
+  .links a { display:inline-block; margin:4px 10px 0 0; font-size:.88rem; font-weight:600; color:var(--accent2); text-decoration:none; } .links a:hover { text-decoration:underline; }
+  .badge { font-size:.72rem; font-weight:700; background:var(--accent); color:#fff; padding:2px 8px; border-radius:999px; margin-left:8px; vertical-align:middle; }
+  .empty { color:var(--muted); text-align:center; padding:18px 0 6px; }
+  .note { font-size:.85rem; color:var(--muted); margin-top:14px; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  button.sm { padding:5px 10px; font-size:.82rem; margin-top:10px; }
+  .live { margin-top:6px; font-size:.88rem; color:var(--muted); }
+  .live a { display:block; padding:6px 0; color:var(--ink); text-decoration:none; border-top:1px solid var(--line); }
+  .live a:hover { color:var(--accent2); } .live small { color:var(--muted); }
+  .ai { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:14px; } .ai .hint { margin:0; }
+  h3.sec { font-size:.95rem; color:var(--muted); margin:22px 0 0; }
+  .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:10px; opacity:0; transition:opacity .25s; pointer-events:none; }
+  .toast.on { opacity:1; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Gift <span>Huddle</span></h1>
+  <p class="sub">Everyone chips in what they know about the person. The picker finds gifts that fit the budget, the place, and the deadline.</p>
+
+  <div class="card">
+    <h2><i>1</i>Who's it for?</h2>
+    <div class="grid" style="margin-top:12px">
+      <div><label>Their name</label><input id="recipient" placeholder="e.g. Thandi"></div>
+      <div><label>Occasion (optional)</label><input id="occasion" placeholder="e.g. 30th birthday"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><i>2</i>What are they like?</h2>
+    <p class="hint">Each friend adds their own take. Things several friends agree on count for more.</p>
+    <div class="row">
+      <div><label>Your name</label><input id="fname" placeholder="e.g. Sipho"></div>
+      <div style="flex:2"><label>Anything else they love (comma separated)</label><input id="ftext" placeholder="e.g. espresso, sci-fi novels, the Springboks"></div>
+    </div>
+    <div class="chips" id="tagChips"></div>
+    <button id="addFriend">Add my picks</button>
+    <div id="friends" style="margin-top:14px"></div>
+    <div id="cloudWrap" style="display:none"><label style="margin-top:12px">What the group agrees on</label><div class="chips" id="cloud"></div></div>
+  </div>
+
+  <div class="card">
+    <h2><i>3</i>Where, how much, and by when?</h2>
+    <div class="grid" style="margin-top:12px">
+      <div><label>Their city or town (South Africa)</label><input id="loc" list="cities" placeholder="e.g. Cape Town">
+        <datalist id="cities"><option>Johannesburg<option>Cape Town<option>Durban<option>Pretoria<option>Gqeberha<option>Bloemfontein<option>East London<option>Stellenbosch<option>Pietermaritzburg<option>Polokwane<option>Mbombela<option>Kimberley<option>George<option>Rustenburg</datalist></div>
+      <div><label>Min total budget (R)</label><input id="min" type="number" min="0" step="50" value="300"></div>
+      <div><label>Max total budget (R)</label><input id="max" type="number" min="0" step="50" value="1200"></div>
+      <div><label>Needed by (optional)</label><input id="by" type="date"></div>
+    </div>
+  </div>
+
+  <div class="card" id="resCard">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <h2 id="resTitle">Gift ideas</h2>
+      <div><button class="ghost" id="share">Copy link for friends</button> <button class="ghost" id="reset">Start over</button></div>
+    </div>
+    <div class="ai"><button id="askAI" disabled>✨ Ask AI for ideas</button><span class="hint" id="aiNote"></span></div>
+    <div id="aiResults"></div>
+    <h3 class="sec" id="algoTitle" style="display:none">More ideas from the built-in list</h3>
+    <div id="results"></div>
+    <p class="note" id="hidden"></p>
+    <p class="note">Prices are typical South African ranges in rand, not quotes, unless you use "Check live prices". Delivery estimates assume standard courier times, so check the retailer before ordering.</p>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- Trait vocabulary ----------
+const TAGS = { coffee:'☕ Coffee', tea:'🍵 Tea', cooking:'🍳 Cooking', braai:'🔥 Braai', baking:'🧁 Baking', foodie:'🍜 Foodie', sweet:'🍫 Sweet tooth',
+  wine:'🍷 Wine', cocktails:'🍸 Cocktails', beer:'🍺 Beer', fitness:'🏋️ Fitness', running:'🏃 Running', yoga:'🧘 Yoga',
+  outdoors:'🥾 Hiking & outdoors', cycling:'🚲 Cycling', travel:'✈️ Travel', reading:'📚 Reading', writing:'✍️ Stationery',
+  art:'🎨 Art', crafts:'🧶 Crafts', photo:'📷 Photography', music:'🎧 Music', gaming:'🎮 Gaming', tech:'💻 Tech', film:'🎬 Film & TV',
+  plants:'🪴 Plants', garden:'🌻 Gardening', dogs:'🐶 Dogs', cats:'🐱 Cats', fashion:'👗 Fashion', selfcare:'🛁 Self-care',
+  cosy:'🕯️ Cosy home', boardgames:'🎲 Board games', puzzles:'🧩 Puzzles', sport:'⚽ Watching sport', eco:'♻️ Eco-conscious',
+  sentimental:'💌 Sentimental', funny:'😂 Loves a joke', diy:'🔧 DIY' };
+
+// Free-text words that map onto a known trait
+const SYN = [
+  [/coffee|espresso|latte|caffeine|barista/, 'coffee'], [/\btea\b|matcha|chai|rooibos/, 'tea'], [/braai|biltong|potjie|grill|bbq/, 'braai'], [/cook|chef|recipe|kitchen/, 'cooking'],
+  [/bak(e|ing)|bread|sourdough|cake/, 'baking'], [/food|restaurant|eating out|brunch/, 'foodie'], [/chocolate|sweets|candy|dessert/, 'sweet'],
+  [/wine|prosecco|champagne/, 'wine'], [/cocktail|gin|whisk|rum|margarita/, 'cocktails'], [/beer|ale|ipa|lager|pub/, 'beer'],
+  [/gym|workout|lifting|weights|fitness|crossfit|pilates/, 'fitness'], [/run(ning|ner)?\b|marathon|jog/, 'running'], [/yoga|meditat/, 'yoga'],
+  [/hik|camp|outdoor|climb|walks?\b|nature|mountain/, 'outdoors'], [/cycl|bike|biking/, 'cycling'], [/travel|holiday|trips?\b|backpack|abroad/, 'travel'],
+  [/read|books?\b|novel|kindle|sci-?fi|fantasy|poetry/, 'reading'], [/journal|stationery|notebook|pens?\b|writ/, 'writing'],
+  [/\bart\b|paint|draw|sketch|galler|museum/, 'art'], [/craft|knit|crochet|sew|embroider|pottery|ceramic/, 'crafts'], [/photo|camera/, 'photo'],
+  [/music|gig|concert|vinyl|guitar|piano|festival|singing/, 'music'], [/gam(e|ing|er)\b|playstation|xbox|nintendo|\bpc\b/, 'gaming'],
+  [/tech|gadget|coding|programming|computer/, 'tech'], [/film|movie|cinema|netflix|tv\b|series|anime/, 'film'],
+  [/plant|succulent|cactus/, 'plants'], [/garden|allotment|grow/, 'garden'], [/dog|puppy/, 'dogs'], [/\bcats?\b|kitten/, 'cats'],
+  [/fashion|clothes|style|jewel|shoes|sneaker|trainers/, 'fashion'], [/skincare|spa|bath|self.?care|makeup|beauty|relax/, 'selfcare'],
+  [/cosy|cozy|candle|home|interior|decor|blanket/, 'cosy'], [/board ?game|card game|d&d|dungeons/, 'boardgames'], [/puzzle|jigsaw|escape room|crossword|sudoku/, 'puzzles'],
+  [/football|soccer|rugby|cricket|tennis|f1|formula|basketball|nba|nfl|springbok|bokke|proteas|bafana|sports?\b/, 'sport'], [/eco|sustainab|vegan|zero.?waste|environment/, 'eco'],
+  [/sentimental|memor|nostalg|family|romantic/, 'sentimental'], [/funny|joke|humou?r|meme|banter|prank/, 'funny'], [/diy|tools?\b|woodwork|fix|build/, 'diy'],
+];
+
+// ---------- Gift catalogue ----------
+// kind: ship (posted, lead days), digital / exp (emailed instantly), custom (made to order), make (the group makes it)
+// Courier time in days: main centres are quicker than outlying towns
+const METROS = /johannesburg|joburg|jozi|sandton|soweto|pretoria|tshwane|centurion|midrand|cape town|durban|umhlanga|gqeberha|port elizabeth|bloemfontein/i;
+const lead = (kind, loc) => { const far = loc && !METROS.test(loc) ? 3 : 0; return kind === 'ship' ? 3 + far : kind === 'custom' ? 10 + far : 0; };
+const G = (name, tags, lo, hi, kind='ship', shop='') => ({ name, tags, lo, hi, kind, shop });
+const GIFTS = [
+  G('Speciality coffee subscription (3 months)', ['coffee','foodie'], 30, 60, 'digital'),
+  G('Pour-over coffee set', ['coffee','cosy'], 25, 60, 'ship', 'kitchen shop'),
+  G('Hand coffee grinder', ['coffee','tech'], 40, 120, 'ship', 'coffee equipment shop'),
+  G('Loose-leaf tea sampler and infuser', ['tea','cosy'], 15, 40, 'ship', 'tea shop'),
+  G('Cast-iron teapot', ['tea','cosy'], 30, 70, 'ship', 'homeware shop'),
+  G('Braai tool set and apron', ['braai','cooking'], 20, 60, 'ship', 'braai shop'),
+  G('Biltong and droëwors hamper', ['braai','foodie'], 15, 50, 'ship', 'biltong shop'),
+  G('Portable braai or fire pit', ['braai','outdoors'], 40, 120, 'ship', 'outdoor shop'),
+  G("Quality chef's knife", ['cooking'], 40, 150, 'ship', 'kitchen shop'),
+  G('Cookbook from their favourite cuisine', ['cooking','reading','foodie'], 15, 35, 'ship', 'bookshop'),
+  G('Cooking class for two', ['cooking','foodie'], 60, 150, 'exp'),
+  G('Hot sauce or spice collection', ['cooking','foodie'], 15, 45, 'ship', 'deli'),
+  G('Baking kit with good tins and tools', ['baking'], 20, 60, 'ship', 'kitchen shop'),
+  G('Sourdough starter kit', ['baking','cooking','diy'], 20, 45),
+  G('Tasting-menu restaurant voucher', ['foodie'], 60, 200, 'exp'),
+  G('Artisan chocolate box', ['sweet','foodie'], 15, 50, 'ship', 'chocolate shop'),
+  G('Wine tasting experience', ['wine'], 30, 90, 'exp'),
+  G('Decanter and a good bottle', ['wine','cosy'], 35, 100, 'ship', 'wine shop'),
+  G('Cocktail-making kit', ['cocktails'], 25, 70, 'ship', 'homeware shop'),
+  G('Cocktail masterclass', ['cocktails'], 35, 80, 'exp'),
+  G('Craft beer selection box', ['beer'], 20, 50, 'ship', 'craft beer shop'),
+  G('Brewery tour and tasting', ['beer'], 20, 50, 'exp'),
+  G('Massage gun', ['fitness','running'], 40, 120, 'ship', 'sports shop'),
+  G('Fitness class pass bundle', ['fitness','yoga'], 30, 100, 'exp'),
+  G('Running belt and technical socks', ['running'], 20, 50, 'ship', 'running shop'),
+  G('Entry to a local race', ['running'], 30, 90, 'digital'),
+  G('Premium yoga mat', ['yoga','fitness'], 30, 90, 'ship', 'sports shop'),
+  G('Insulated water bottle', ['fitness','outdoors','eco','running','cycling'], 15, 40, 'ship', 'outdoor shop'),
+  G('Hiking daypack', ['outdoors','travel'], 40, 120, 'ship', 'outdoor shop'),
+  G('Head torch and trail snacks', ['outdoors','running'], 20, 50, 'ship', 'outdoor shop'),
+  G('Compact camping hammock', ['outdoors','travel'], 25, 70, 'ship', 'outdoor shop'),
+  G('Bike lights and multitool', ['cycling'], 25, 70, 'ship', 'bike shop'),
+  G('Scratch-off world map', ['travel','cosy'], 15, 35),
+  G('Packing cubes and travel organiser', ['travel'], 15, 45, 'ship', 'luggage shop'),
+  G('Weekend-away voucher', ['travel','sentimental'], 100, 400, 'exp'),
+  G('Book subscription (3 months)', ['reading'], 30, 70, 'digital'),
+  G('Bookshop gift card and a hand-picked novel', ['reading'], 15, 60, 'ship', 'independent bookshop'),
+  G('E-reader', ['reading','tech','travel'], 90, 180, 'ship', 'electronics store'),
+  G('Fountain pen and notebook', ['writing'], 20, 80, 'ship', 'stationery shop'),
+  G('Watercolour set', ['art'], 20, 70, 'ship', 'art supply shop'),
+  G('Pottery or life-drawing class', ['art','crafts'], 30, 90, 'exp'),
+  G('Knitting or embroidery starter kit', ['crafts','cosy'], 15, 45, 'ship', 'craft shop'),
+  G('Instant camera and film', ['photo','sentimental'], 60, 130, 'ship', 'camera shop'),
+  G('Printed photo book from the whole group', ['photo','sentimental'], 25, 70, 'custom'),
+  G('Gig or concert tickets', ['music'], 30, 150, 'exp'),
+  G('Vinyl of a favourite album', ['music','cosy'], 20, 45, 'ship', 'record shop'),
+  G('Wireless earbuds', ['music','tech','fitness','running'], 40, 180, 'ship', 'electronics store'),
+  G('Game store gift card', ['gaming'], 15, 100, 'digital'),
+  G('Controller or mechanical keyboard', ['gaming','tech'], 50, 150, 'ship', 'electronics store'),
+  G('Smart speaker', ['tech','music','cosy'], 30, 120, 'ship', 'electronics store'),
+  G('Portable charger', ['tech','travel'], 20, 60, 'ship', 'electronics store'),
+  G('Cinema membership or voucher', ['film'], 20, 80, 'digital'),
+  G('Mini projector for movie nights', ['film','tech','cosy'], 70, 200, 'ship', 'electronics store'),
+  G('Statement houseplant in a nice pot', ['plants','cosy'], 20, 70, 'ship', 'plant shop'),
+  G('Indoor herb garden', ['plants','garden','cooking'], 25, 80, 'ship', 'garden centre'),
+  G('Garden tool set and seeds', ['garden','eco'], 25, 70, 'ship', 'garden centre'),
+  G('Personalised pet portrait', ['dogs','cats','art','sentimental'], 40, 120, 'custom'),
+  G('Dog treat and toy box', ['dogs'], 15, 45, 'ship', 'pet shop'),
+  G('Cat tree or toy bundle', ['cats'], 20, 90, 'ship', 'pet shop'),
+  G('Silk scarf or quality accessory', ['fashion'], 25, 120, 'ship', 'boutique'),
+  G('Spa day voucher', ['selfcare'], 50, 180, 'exp'),
+  G('Skincare or bath set', ['selfcare','cosy'], 20, 70, 'ship', 'beauty shop'),
+  G('Weighted blanket', ['cosy','selfcare'], 40, 120, 'ship', 'homeware shop'),
+  G('Scented candle trio', ['cosy','selfcare'], 15, 50, 'ship', 'gift shop'),
+  G('Strategy board game', ['boardgames'], 25, 70, 'ship', 'board game shop'),
+  G('Party card game', ['boardgames','funny'], 12, 30, 'ship', 'board game shop'),
+  G('1000-piece art jigsaw', ['puzzles','art','cosy'], 15, 35, 'ship', 'toy and game shop'),
+  G('Escape room voucher', ['puzzles','boardgames','gaming'], 25, 80, 'exp'),
+  G('Match tickets', ['sport'], 40, 150, 'exp'),
+  G('Team shirt or scarf', ['sport','fashion'], 20, 90, 'ship', 'sports shop'),
+  G('Reusable everyday kit (cup, wraps, tote)', ['eco'], 20, 50, 'ship', 'zero waste shop'),
+  G('Tree planted or charity donation in their name', ['eco','sentimental'], 10, 100, 'digital'),
+  G('Custom star map or framed memory print', ['sentimental','cosy'], 30, 80, 'custom'),
+  G('"Open when…" letters box from everyone', ['sentimental'], 5, 20, 'make'),
+  G('Custom face socks or in-joke mug', ['funny'], 12, 35, 'custom'),
+  G('Quality multitool or toolkit', ['diy','outdoors'], 25, 90, 'ship', 'hardware store'),
+];
+
+// Catalogue prices are written in rough pound-sized units; convert to rand, rounded to R50
+const toRand = v => Math.max(50, Math.round(v * 18 / 50) * 50);
+GIFTS.forEach(g => { g.lo = toRand(g.lo); g.hi = toRand(g.hi); });
+
+// ---------- State ----------
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const FIELDS = ['recipient','occasion','loc','min','max','by'];
+const CUR = 'R', q = encodeURIComponent;
+let status = { server:false, ai:false, prices:false };   // what the server has switched on
+let aiIdeas = null;                                      // last set of AI suggestions
+let state = { friends: [] };          // friends: [{ name, traits:[tagId | '~free text'] }]
+let picked = new Set();               // chips toggled in the "add my picks" form
+
+function load() {
+  try {
+    const h = location.hash.match(/^#g=(.+)/);
+    const raw = h ? decodeURIComponent(escape(atob(h[1]))) : localStorage.getItem('giftHuddleZA');
+    if (raw) state = Object.assign({ friends: [] }, JSON.parse(raw));
+    if (h) history.replaceState(null, '', location.pathname);
+  } catch (e) { /* bad link or storage: start fresh */ }
+  FIELDS.forEach(f => { if (state[f] != null) $(f).value = state[f]; });
+}
+function save() {
+  FIELDS.forEach(f => state[f] = $(f).value);
+  try { localStorage.setItem('giftHuddleZA', JSON.stringify(state)); } catch (e) {}
+}
+
+// ---------- Traits ----------
+const label = t => t[0] === '~' ? t.slice(1) : TAGS[t];
+function parseFree(text) {
+  return text.split(',').map(s => s.trim()).filter(Boolean).map(s => {
+    const low = s.toLowerCase(), hit = SYN.find(([re]) => re.test(low));
+    return hit ? hit[1] : '~' + s;
+  });
+}
+function weights() {                  // trait -> names of friends who mentioned it
+  const w = {};
+  state.friends.forEach(f => f.traits.forEach(t => {
+    const key = t[0] === '~' ? t.toLowerCase() : t;
+    (w[key] = w[key] || { trait: t, who: [] }).who.push(f.name);
+  }));
+  return w;
+}
+
+// ---------- Delivery ----------
+function daysLeft() {
+  if (!$('by').value) return null;
+  const [y, m, d] = $('by').value.split('-').map(Number), now = new Date();
+  return Math.round((new Date(y, m - 1, d) - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 864e5);
+}
+function delivery(g, days, loc) {     // -> { cls, text } or null if it can't make it
+  const place = loc ? ' in ' + esc(loc) : ' nearby';
+  if (g.kind === 'digital' || g.kind === 'exp') return { cls:'ok', text:'Emailed instantly, so it works for any date' };
+  if (g.kind === 'make') return { cls:'ok', text:'Made by the group, no delivery needed' };
+  const L = lead(g.kind, loc);
+  if (days === null) return { cls:'ok', text: g.kind === 'custom' ? `Made to order: allow about ${L} days` : `Usually delivered in ${L} to ${L + 2} days` };
+  if (days >= L + 2) return { cls:'ok', text:`Order online: arrives with time to spare (${days} days left)` };
+  if (days >= L && g.kind === 'ship') return { cls:'tight', text:`Tight: order today with express delivery (${days} days left)` };
+  if (g.kind === 'ship' && g.shop) return { cls:'tight', text:`Too late to courier: buy in person${place}` };
+  return null;
+}
+
+// ---------- Ranking ----------
+function rank() {
+  const w = weights(), min = +$('min').value || 0, max = +$('max').value || Infinity;
+  const days = daysLeft(), loc = $('loc').value.trim();
+  // Free-text traits nothing in the catalogue covers become their own themed idea
+  const themed = Object.values(w).filter(x => x.trait[0] === '~').map(x =>
+    Object.assign(G(`Something ${x.trait.slice(1)}-themed`, [x.trait.toLowerCase()], min, max === Infinity ? min + 1000 : max, 'ship', 'gift shop'), { themed: x.trait.slice(1) }));
+  const out = [], hidden = { budget:0, late:0 };
+  [...GIFTS, ...themed].forEach(g => {
+    const hits = g.tags.filter(t => w[t]);
+    if (!hits.length) return;
+    const lo = Math.max(g.lo, min), hi = Math.min(g.hi, max);
+    if (lo > hi) return hidden.budget++;
+    const del = delivery(g, days, loc);
+    if (!del) return hidden.late++;
+    let score = hits.reduce((s, t) => s + w[t].who.length, 0) + 0.4 * (hits.length - 1);
+    if (g.themed) score *= 0.8;       // generic idea, rank below specific ones
+    if (del.cls === 'tight') score *= 0.9;
+    out.push({ g, hits, lo, hi, del, score });
+  });
+  out.sort((a, b) => b.score - a.score);
+  // Top 10, plus any typed-in themed idea that would otherwise fall off the end
+  return { list: out.filter((r, i) => i < 10 || r.g.themed), hidden, w, days, loc };
+}
+
+// ---------- Rendering ----------
+function renderChips() {
+  $('tagChips').innerHTML = Object.entries(TAGS).map(([id, l]) => `<span class="chip ${picked.has(id) ? 'on' : ''}" data-id="${id}">${l}</span>`).join('');
+}
+function renderFriends() {
+  $('friends').innerHTML = state.friends.map((f, i) =>
+    `<div class="friend"><div><strong>${esc(f.name)}</strong><small>${f.traits.map(t => esc(label(t))).join(' · ')}</small></div><button class="x" data-rm="${i}" title="Remove">×</button></div>`).join('');
+  const w = Object.values(weights()).sort((a, b) => b.who.length - a.who.length);
+  $('cloudWrap').style.display = w.length ? '' : 'none';
+  $('cloud').innerHTML = w.map(x => `<span class="chip static">${esc(label(x.trait))}<b>×${x.who.length}</b></span>`).join('');
+}
+function card(c, loc, n) {
+  const each = n > 1 ? ` · about ${CUR}${Math.ceil((c.lo + c.hi) / 2 / n / 10) * 10} each` : '';
+  const a = (href, text) => `<a target="_blank" rel="noopener" href="${href}">${text} ↗</a>`, links = [];
+  if (c.kind === 'exp') links.push(a(`https://www.google.com/search?gl=za&q=${q(c.search + ' ' + (loc || 'South Africa'))}`, 'Find one' + (loc ? ' in ' + esc(loc) : '')));
+  else if (c.kind === 'digital') links.push(a(`https://www.google.com/search?gl=za&q=${q(c.search + ' South Africa')}`, 'Search online'));
+  else if (c.kind !== 'make') {
+    if (c.kind === 'ship') links.push(a(`https://www.takealot.com/all?qsearch=${q(c.search)}`, 'Takealot'));
+    links.push(a(`https://www.google.com/search?tbm=shop&gl=za&q=${q(c.search)}`, 'Google Shopping'));
+  }
+  if (c.shop) links.push(a(`https://www.google.com/maps/search/${q(c.shop + ' near ' + (loc ? loc + ', South Africa' : 'me'))}`, esc(c.shop[0].toUpperCase() + c.shop.slice(1)) + 's' + (loc ? ' in ' + esc(loc) : ' nearby')));
+  const live = status.prices && (c.kind === 'ship' || c.kind === 'custom') ? `<button class="ghost sm" data-q="${esc(c.search)}">Check live prices</button><div class="live"></div>` : '';
+  const price = (c.est ? 'about ' : '') + CUR + c.lo + (c.hi > c.lo ? '–' + CUR + c.hi : '');
+  return `<div class="gift ${c.top ? 'top' : ''}"><header><h3>${esc(c.name)}${c.badge ? `<span class="badge">${c.badge}</span>` : ''}</h3><span class="price">${price}</span></header>
+    ${c.bar == null ? '' : `<div class="bar"><div style="width:${c.bar}%"></div></div>`}
+    <p class="why">Because: ${c.why}${each}</p><p class="del ${c.del.cls}">${c.del.text}</p><div class="links">${links.join('')}</div>${live}</div>`;
+}
+function renderAI() {
+  const n = state.friends.length, loc = $('loc').value.trim(), days = daysLeft();
+  $('askAI').disabled = !status.ai || !n;
+  $('aiNote').textContent = !status.server ? 'Run the server (npm start) to switch on AI ideas.'
+    : !status.ai ? 'AI is off: add an Anthropic API key to the .env file.'
+    : aiIdeas ? 'Changed something? Ask again for fresh ideas.' : '';
+  $('algoTitle').style.display = aiIdeas ? '' : 'none';
+  $('aiResults').innerHTML = (aiIdeas || []).map((g, i) => card({
+    name: g.name, badge: i ? 'AI pick' : 'AI top pick', top: !i, est: true, lo: Math.round(g.est_low), hi: Math.round(g.est_high), why: esc(g.why),
+    del: delivery({ kind: g.kind, shop: g.shop_type }, days, loc) || { cls:'tight', text:'May not arrive in time: check before ordering' },
+    search: g.search_query, kind: g.kind, shop: g.shop_type }, loc, n)).join('');
+}
+function renderResults() {
+  const name = $('recipient').value.trim(), n = state.friends.length;
+  $('resTitle').textContent = name ? `Gift ideas for ${name}` : 'Gift ideas';
+  renderAI();
+  if (!n) { $('results').innerHTML = '<p class="empty">Add at least one friend\'s picks above to see ideas.</p>'; $('hidden').textContent = ''; return; }
+  const { list, hidden, w, days, loc } = rank();
+  if (days !== null && days < 0) { $('results').innerHTML = '<p class="empty">That date has already passed. Pick a later one.</p>'; $('hidden').textContent = ''; return; }
+  const top = list[0] ? list[0].score : 1;
+  $('results').innerHTML = list.length ? list.map((r, i) => card({
+    name: r.g.name, badge: !i && !aiIdeas ? 'Best match' : '', top: !i && !aiIdeas, lo: r.lo, hi: r.hi, del: r.del, kind: r.g.kind, shop: r.g.shop,
+    why: r.hits.map(t => `<b>${esc(label(w[t].trait))}</b> (${w[t].who.map(esc).join(', ')})`).join(' · '),
+    search: r.g.themed ? r.g.themed + ' gift' : r.g.name.replace(/\(.*?\)/g, '').trim(), bar: Math.round(r.score / top * 100) }, loc, n)).join('')
+    : '<p class="empty">Nothing fits all three limits. Try widening the budget or moving the date.</p>';
+  const bits = [];
+  if (hidden.budget) bits.push(`${hidden.budget} outside the budget`);
+  if (hidden.late) bits.push(`${hidden.late} that can't arrive in time`);
+  $('hidden').textContent = bits.length ? `Left out: ${bits.join(' and ')}.` : '';
+}
+function refresh() { save(); renderFriends(); renderResults(); }
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 2200); }
+
+// ---------- Events ----------
+$('tagChips').onclick = e => { const id = e.target.dataset.id; if (!id) return; picked.has(id) ? picked.delete(id) : picked.add(id); renderChips(); };
+$('addFriend').onclick = () => {
+  const name = $('fname').value.trim() || `Friend ${state.friends.length + 1}`;
+  const traits = [...new Set([...picked, ...parseFree($('ftext').value)])];
+  if (!traits.length) return toast('Pick or type at least one thing they like');
+  state.friends.push({ name, traits });
+  picked.clear(); $('fname').value = ''; $('ftext').value = '';
+  renderChips(); refresh();
+};
+$('ftext').onkeydown = e => { if (e.key === 'Enter') $('addFriend').click(); };
+$('friends').onclick = e => { const i = e.target.dataset.rm; if (i != null) { state.friends.splice(+i, 1); refresh(); } };
+FIELDS.forEach(f => $(f).oninput = refresh);
+$('share').onclick = () => {
+  save();
+  const url = location.origin + location.pathname + '#g=' + btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+  (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => toast('Link copied. Friends can open it and add their picks.'), () => prompt('Copy this link:', url));
+};
+$('reset').onclick = () => { if (confirm('Clear everything and start over?')) { localStorage.removeItem('giftHuddleZA'); location.href = location.pathname; } };
+
+$('askAI').onclick = async () => {
+  const btn = $('askAI');
+  btn.disabled = true; btn.textContent = 'Thinking… (can take 20 seconds)';
+  try {
+    const traits = Object.values(weights()).map(x => ({ label: x.trait[0] === '~' ? x.trait.slice(1) : TAGS[x.trait].replace(/^\S+\s/, ''), count: x.who.length }));
+    const r = await fetch('/api/suggest', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({
+      recipient: $('recipient').value, occasion: $('occasion').value, location: $('loc').value, min: $('min').value, max: $('max').value, days: daysLeft(), traits }) });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    aiIdeas = data.ideas;
+  } catch (e) { toast(e.message || 'The AI request failed'); }
+  btn.textContent = '✨ Ask AI for ideas';
+  renderResults();
+};
+$('resCard').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-q]');
+  if (!b) return;
+  const box = b.nextElementSibling;
+  b.disabled = true; box.textContent = 'Checking South African shops…';
+  try {
+    const r = await fetch(`/api/prices?q=${q(b.dataset.q)}&min=${+$('min').value || 0}&max=${+$('max').value || ''}`), d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    box.innerHTML = d.items.filter(p => /^https?:\/\//.test(p.link)).map(p =>
+      `<a target="_blank" rel="noopener" href="${esc(p.link)}"><b>${CUR}${Math.round(p.price)}</b> · ${esc(p.title)} <small>${esc(p.source || '')}${p.delivery ? ' · ' + esc(p.delivery) : ''}</small></a>`).join('')
+      || 'No listings inside your budget right now.';
+  } catch (err) { box.textContent = err.message || 'Price check failed'; }
+  b.disabled = false;
+});
+
+load(); renderChips(); refresh();
+fetch('/api/status').then(r => r.json()).then(s => { status = { ...s, server:true }; renderResults(); }).catch(() => {});
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('/sw.js').catch(() => {});
+</script>
+</body>
+</html>
